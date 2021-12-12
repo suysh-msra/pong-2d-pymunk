@@ -1,0 +1,127 @@
+####fair warning : most of the code is from a video tutorial on youtube.
+
+import pygame
+import pymunk
+
+pygame.init()
+
+display = pygame.display.set_mode((1000,600))
+clk = pygame.time.Clock()
+space = pymunk.Space()
+FPS = 70
+
+left = 50
+right = 950
+top = 25
+bottom = 575
+
+mid_x = (left+right)/2
+mid_y = (top + bottom)/2
+
+class Ball():
+    def __init__(self):
+        self.body = pymunk.Body()
+        self.body.position = mid_x,mid_y
+        self.body.velocity = 400,-300
+        self.shape = pymunk.Circle(self.body, 8)
+        self.shape.density = 1
+        self.shape.elasticity = 1
+        space.add(self.body, self.shape)
+        self.shape.collision_type = 1
+
+    def draw(self):
+        x, y = self.body.position
+        pygame.draw.circle(display,(255,255,255),
+                            ( int(x),int(y)), 8)
+    def reset(self, space, arbiter, data):
+        self.body.position = mid_x,mid_y
+        self.body.velocity = 400,-300
+        return False
+        
+
+class Wall():
+    def __init__(self,p1,p2, collision_number = None):
+        self.body = pymunk.Body(body_type = pymunk.Body.STATIC)
+        self.shape = pymunk.Segment(self.body, p1, p2, 15)
+        self.shape.elasticity = 1
+        space.add(self.body,self.shape)
+        if collision_number :
+            self.shape.collision_type = collision_number
+
+
+    def draw(self):
+        pygame.draw.line(display,(255,255,255), self.shape.a ,
+                         self.shape.b, 15)
+
+
+class Player():
+    def __init__(self, x):
+        self.body = pymunk.Body(body_type = pymunk.Body.KINEMATIC)
+        self.body.position = x, mid_y
+        self.shape = pymunk.Segment(self.body,[0,-30],[0,40],5 )
+        self.shape.elasticity = 1
+        space.add(self.body, self.shape)
+
+    def draw(self):
+        p1 = self.body.local_to_world(self.shape.a)
+        p2 = self.body.local_to_world(self.shape.b)
+        pygame.draw.line(display,(255,255,255), p1 ,
+                         p2, 10)
+
+    def move(self, up = True):
+        if up:
+            self.body.velocity = 0, -600
+        else:
+            self.body.velocity = 0, 600
+
+    def stop(self):
+        self.body.velocity = 0,0
+            
+
+def game():
+    ball = Ball()
+    wall_left = Wall([left,top],[left,bottom],2)
+    wall_right = Wall([right,top],[right,bottom],2)
+    wall_top = Wall([left,top],[right,top])
+    wall_bottom = Wall([left,bottom],[right,bottom])
+    player1 = Player(left + 15)
+    player2 = Player(right - 15)
+
+    score =  space.add_collision_handler(1,2)
+    score.begin = ball.reset
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+
+        keys = pygame.key.get_pressed()
+        if keys[273]:
+            player2.move()
+        elif keys[274]:
+            player2.move(False)
+        else:
+            player2.stop()
+        if keys[119]:
+            player1.move()
+        elif keys[115]:
+            player1.move(False)
+        else:
+            player1.stop()
+        
+        display.fill((0,0,0))    
+        ball.draw()
+        wall_left.draw()
+        wall_right.draw()
+        wall_top.draw()
+        wall_bottom.draw()
+        player1.draw()
+        player2.draw()
+        pygame.display.update()
+        clk.tick(FPS)
+        space.step(1/FPS)
+
+
+game()
+
+pygame.quit()
